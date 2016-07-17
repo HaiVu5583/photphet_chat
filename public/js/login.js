@@ -5,6 +5,7 @@ var iAuth = {
 			firebase.auth().onAuthStateChanged(function(user) {
 				if (user) {
 					if (href.includes('login')){
+						Materialize.toast('Login Sucess! Redirecting... ', 3000, 'rounded');
 						window.location.href = "chat";
 					}
 				} else {
@@ -20,12 +21,19 @@ var iAuth = {
 	googleLogin : function googleLogin(){
 		var provider = new firebase.auth.GoogleAuthProvider();
 		provider.addScope('https://www.googleapis.com/auth/plus.login');
-		return firebase.auth().signInWithPopup(provider);
+		firebase.auth().signInWithRedirect(provider);
+		return firebase.auth().getRedirectResult();
+		// return firebase.auth().signInWithPopup(provider);
 	},
 	facebookLogin : function facebookLogin(){
 		var provider = new firebase.auth.FacebookAuthProvider();
 		provider.addScope('user_birthday');
-		return firebase.auth().signInWithPopup(provider);
+		firebase.auth().signInWithRedirect(provider);
+		return firebase.auth().getRedirectResult();
+		// return firebase.auth().signInWithPopup(provider);
+	},
+	emailLogin: function emailLogin(email, password){
+		return firebase.auth().signInWithEmailAndPassword(email, password);
 	},
 	logout : function logout(){
 		firebase.auth().signOut().then(function() {

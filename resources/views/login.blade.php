@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>Fire Chat</title>
+	<title>Loser</title>
 	<meta charset='utf8' />
 	@include('header')
 	<style type="text/css">
@@ -19,14 +19,14 @@
 <body>
 	<div class="row">
 		<div class="col s12 m4 offset-m4 card">
-			<form class="col s12">
+			<form class="col s12" id="login-form">
 				<div class="row" id="banner">
 					<span id='loser-banner'>Loser</span>
 				</div>
 				<div class="row">
 					<div class="input-field col s12">
-						<input id="first_name" type="text" class="validate">
-						<label for="first_name">Username</label>
+						<input id="email" type="text" class="validate">
+						<label for="email">Email</label>
 					</div>
 				</div>
 				<div class="row">
@@ -37,7 +37,7 @@
 				</div>
 				<div class="row">
 					<div class="input-field col s12">
-						<button class="input-field col s12 btn waves-effect waves-light" type="submit" name="action">Login
+						<button class="input-field col s12 btn waves-effect waves-light" type="submit" name="action" id="email-login-btn">Login
 						</button>
 					</div>
 				</div>
@@ -56,18 +56,34 @@
 					<button id ="google-login-btn" class="input-field col s12 btn waves-effect waves-light red darken-2" type="submit" name="action">Login with Google+</button>
 				</div>
 				<div class="input-field col s12">
-					<button id ="register-btn" class="input-field col s12 btn waves-effect waves-light" type="submit" name="action">Register an account</button>
+					<a id ="register-btn" class="input-field col s12 btn waves-effect waves-light" type="submit" href="register">Register an account</a>
 				</div>
 			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="js/user.js"></script>
 	<script type="text/javascript">
+		var email = document.querySelector('#email');
+		var password = document.querySelector('#password');
 		document.querySelector("#google-login-btn").addEventListener("click", function(){
-			iAuth.googleLogin();
+			iAuth.googleLogin().catch(function(error){
+				Materialize.toast('Error: '+JSON.stringify(error), 3000, 'rounded');
+			});
 		});
 		document.querySelector("#facebook-login-btn").addEventListener("click", function(){
-			iAuth.facebookLogin();
+			iAuth.facebookLogin().catch(function(error){
+				console.log('Error: '+JSON.stringify(error));
+				Materialize.toast('Error: '+JSON.stringify(error), 3000, 'rounded');
+			});;
+		});
+		document.querySelector('#email-login-btn').addEventListener("click", function(){
+
+		});
+		document.querySelector('#login-form').addEventListener('submit', function(event){
+			event.preventDefault();
+			iAuth.emailLogin(email.value, password.value).then(function(result){
+				Materialize.toast('Login Sucess! Redirecting... ', 3000, 'rounded');
+			});
 		});
 	</script>
 </body>

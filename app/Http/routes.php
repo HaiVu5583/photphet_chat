@@ -32,3 +32,4 @@ Route::group(['middleware' => ['web']], function () {
 
 Route::get('/login', 'AuthenticationController@login');
 Route::get('/chat', 'ChatController@chat');
+Route::get('/register', 'AuthenticationController@register');

@@ -45,7 +45,7 @@
 <body>
 	<div class="fixed-action-btn horizontal click-to-toggle" id='function-btn' style="top: 10px; right: 10px;">
 		<a class="btn-floating btn-large">
-			<img alt="" class="circle" id='user-avatar'>
+			<img alt="" class="circle white" id='user-avatar'>
 			<!-- <i class="material-icons">menu</i> -->
 		</a>
 		<ul>
@@ -127,6 +127,8 @@
 	<script type="text/javascript" src="js/user.js"></script>
 	<script type="text/javascript" src="js/chat.js"></script>
 	<script type="text/javascript" src="js/room.js"></script>
+	<script type="text/javascript" src="js/notification.js"></script>
+	<script type="text/javascript" src="js/const.js"></script>
 
 	<script type="text/javascript">
 		var chatbox = document.querySelector('#chatbox');
@@ -134,14 +136,13 @@
 		var chatList = chatcontent.querySelector('.collection');
 		var roomUsersInfo = [];
 		var roomUsersInfoObject = {};
-		
+	
 		// Asysn get current user, can't use immidiate
 		//  Need review, all function need synchonize
 		firebase.auth().onAuthStateChanged(function(user) {
 			if (user) {
 		    // User is signed in.
 		    currentUser = user;
-		    document.querySelector('#user-avatar').setAttribute('src', currentUser.photoURL);
 
 		    iUser.getUser(currentUser.uid).then(function(data){
 		    	if (!data.val()){
@@ -171,11 +172,14 @@
 		    			roomUsersInfoObject[userInfo.uid] = userInfo;
 		    			document.querySelector('#member').innerHTML += '<div class="chip"><img src="' +userInfo.photo+'" alt="Contact Person">'+userInfo.displayName+'</div>'
 		    		}
+
+		    		// Show avatar of user in top right
+		    		document.querySelector('#user-avatar').setAttribute('src', roomUsersInfoObject[currentUser.uid].photo);
+
 		    		// Listen new message
 		    		var messageRef = firebase.database().ref('/messages');
 		    		var newestSender;
-		    		messageRef.on('child_added', function(data) {
-
+					messageRef.on('child_added', function(data) {
 		    			var newMessage = data.val();
 		    			newestSender = newMessage.authorID;
 						 // set up new message node
@@ -187,7 +191,7 @@
 
 						 var imgAvatar = document.createElement('img');
 						 imgAvatar.setAttribute('src', roomUsersInfoObject[newMessage.authorID].photo);
-						 imgAvatar.className = "circle";
+						 imgAvatar.className = "circle white";
 						 var titleUser = document.createElement('span');
 						 titleUser.setAttribute('src', 'title');
 						 titleUser.setAttribute('style', 'color: rgba(0,0,0,0.3);');
@@ -201,7 +205,13 @@
 						 chatList.appendChild(newMessageNode);
 						 chatcontent.scrollTop = chatcontent.scrollHeight;
 						 
-						 notiSound.play();
+						 //Play sound and show notification
+						 if (currentUser.uid != newMessage.authorID){
+						 	notiSound.play();
+						 	iNotification.notify(roomUsersInfoObject[newMessage.authorID].displayName, newMessage.message);
+						 }
+						 
+
 						 // Hide loading icon
 						 var loadingIcon = document.querySelector('.preloader-wrapper');
 						 if (loadingIcon.style.display == '' || loadingIcon.style.display=='block'){
@@ -209,6 +219,7 @@
 						 }
 
 					});
+		    		
 			    });
 
 			    });
@@ -217,7 +228,9 @@
 			    // No user is signed in.
 			}
 		});
-
+	
+		document.addEventListener('DOMContentLoaded', function(event){
+		});
 		
 		// Send button action
 		document.querySelector('#send-btn').addEventListener('click', function(){
