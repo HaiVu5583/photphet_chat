@@ -8,5 +8,10 @@ var iUser = {
 			photo: photo,
 			displayName: displayName
 		});
+	},
+	updateOnlineStatus: function updateOnlineStatus(uid, onlineStatus){
+		var updates = {};
+  		updates['/users/' + uid] = {online: onlineStatus};
+		return firebase.database().ref().update(updates);
 	}
 }

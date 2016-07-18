@@ -3,9 +3,7 @@ var iNotification = {
 		var icon = "img/loser.png";
 		if (!("Notification" in window)) {
 			console.log("This browser does not support desktop notification");
-		}
-
-		else if (Notification.permission === "granted") {
+		}else if (Notification.permission === "granted") {
 			this.buildNotification(sender, message, icon);
 		}else if (Notification.permission !== 'denied') {
 			Notification.requestPermission(function (permission) {

@@ -40,6 +40,12 @@
 			width: 100%;
 			height: 100%;
 		}
+		.online{
+			background-color: #1de9b6;
+		}
+		.offline{
+			background-color: #e4e4e4;
+		}
 	</style>
 </head>
 <body>
@@ -129,6 +135,7 @@
 	<script type="text/javascript" src="js/room.js"></script>
 	<script type="text/javascript" src="js/notification.js"></script>
 	<script type="text/javascript" src="js/const.js"></script>
+	<script type="text/javascript" src="js/session.js"></script>
 
 	<script type="text/javascript">
 		var chatbox = document.querySelector('#chatbox');
@@ -136,7 +143,8 @@
 		var chatList = chatcontent.querySelector('.collection');
 		var roomUsersInfo = [];
 		var roomUsersInfoObject = {};
-	
+		var roomUsersSessionObject = {};
+		
 		// Asysn get current user, can't use immidiate
 		//  Need review, all function need synchonize
 		firebase.auth().onAuthStateChanged(function(user) {
@@ -144,22 +152,69 @@
 		    // User is signed in.
 		    currentUser = user;
 
+		    // Update online status
+		    iSession.setSession(currentUser.uid, true);
+		    var sessionInstance = iSession.getSessionInstance();
+		    sessionInstance.on('child_added', function(data){
+		    	var changedStatusUser = data.val();
+		    	var userStatus = $('.user-status[for-user="'+changedStatusUser.uid+'"]');
+		    	if (userStatus.hasClass('offline')){
+		    		userStatus.removeClass('offline');
+		    		userStatus.addClass('online');
+		    	}
+		    	if (roomUsersInfoObject[changedStatusUser.uid] && roomUsersInfoObject[changedStatusUser.uid].displayName){
+		    		console.log('Need show online');
+		    		Materialize.toast(roomUsersInfoObject[changedStatusUser.uid].displayName + ' now Online', 3000, 'rounded');
+		    	}
+		    });
+		    
+		     sessionInstance.on('child_removed', function(data){
+		     	var changedStatusUser = data.val();
+		    	var userStatus = $('.user-status[for-user="'+changedStatusUser.uid+'"]');
+		    	if (userStatus.hasClass('online')){
+		    		userStatus.removeClass('online');
+		    		userStatus.addClass('offline');
+		    	}
+		    	if (roomUsersInfoObject[changedStatusUser.uid] && roomUsersInfoObject[changedStatusUser.uid].displayName){
+		    		console.log('Need show offline');
+		    		Materialize.toast(roomUsersInfoObject[changedStatusUser.uid].displayName + ' now Offline', 3000, 'rounded');
+		    	}
+		    });
+		    // iSession.getSession('0NgE6zmCvGRVNlZnrPh14fLkyvK2').then(function(value){
+		    // 	console.log('Value: '+JSON.stringify(value.val()));
+		    // })
+		    // Check if not user info, save
 		    iUser.getUser(currentUser.uid).then(function(data){
 		    	if (!data.val()){
 		    		iUser.addUser(currentUser.uid, currentUser.photoURL, currentUser.displayName);
 		    	}
 		    });
 
+		    // Get all user in default room (ID: 1)
 		    iRoom.getRoomUser(1).then(function(data){
 		    	var roomData = data.val();
 		    	if (!roomData || !roomData[currentUser.uid]){
 		    		iRoom.addRoomUser(currentUser.uid, 1);
 		    	}
 		    	var roomUsers = Object.keys(roomData);
+		    	
+		    	// Load online user
+		    	var loadUserSession = new Promise(function (resolve, reject){
+		    		for (var i=0; i<roomUsers.length; i++){
+		    			iSession.getSession(roomUsers[i]).then(function(result){
+		    				if (session=result.val()){
+		    					roomUsersSessionObject[session.uid] = session;
+		    				}
+		    			});
+		    		}
+		    	});
+
+		    	// Load all user info
 		    	var loadUserInfo = new Promise(function (resolve, reject){
 		    		for (var i=0; i<roomUsers.length; i++){
 		    			iUser.getUser(roomUsers[i]).then(function(result){
-		    				roomUsersInfo.push(result.val());
+		    				var infoItem = result.val();
+	    					roomUsersInfo.push(infoItem);
 		    				if (roomUsersInfo.length == roomUsers.length){
 		    					resolve('Success');
 		    				}
@@ -167,15 +222,21 @@
 		    		}
 		    	});
 		    	loadUserInfo.then(function(value){
+		    		console.log('Room User Info: '+JSON.stringify(roomUsersInfo));
+		    		console.log('Room User Session: '+JSON.stringify(roomUsersSessionObject));
 		    		for (var i=0; i<roomUsersInfo.length;  i++){
 		    			var userInfo = roomUsersInfo[i];
 		    			roomUsersInfoObject[userInfo.uid] = userInfo;
-		    			document.querySelector('#member').innerHTML += '<div class="chip"><img src="' +userInfo.photo+'" alt="Contact Person">'+userInfo.displayName+'</div>'
+		    			if (roomUsersSessionObject[userInfo.uid] && roomUsersSessionObject[userInfo.uid].online){
+		    				document.querySelector('#member').innerHTML += '<div class="chip user-status online" for-user="'+userInfo.uid+'"><img src="' +userInfo.photo+'" alt="Contact Person">'+userInfo.displayName+'</div>';
+		    			}else{
+		    				document.querySelector('#member').innerHTML += '<div class="chip user-status offline" for-user="'+userInfo.uid+'"><img src="' +userInfo.photo+'" alt="Contact Person">'+userInfo.displayName+'</div>';
+		    			}
+		    			
 		    		}
 
 		    		// Show avatar of user in top right
 		    		document.querySelector('#user-avatar').setAttribute('src', roomUsersInfoObject[currentUser.uid].photo);
-
 		    		// Listen new message
 		    		var messageRef = firebase.database().ref('/messages');
 		    		var newestSender;
@@ -189,6 +250,9 @@
 						 var sendDate = new Date(newMessage.timestamp);
 						 newMessageNode.setAttribute('data-tooltip', sendDate.toDateString());
 
+						  if (!roomUsersInfoObject[newMessage.authorID]){
+						 	console.log(newMessage);
+						 }
 						 var imgAvatar = document.createElement('img');
 						 imgAvatar.setAttribute('src', roomUsersInfoObject[newMessage.authorID].photo);
 						 imgAvatar.className = "circle white";
