@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" type="text/css" href="css/materialize.min.css">
 <link rel="shortcut icon" href="img/loser.png" />
 <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -28,5 +29,5 @@
 
 	//Notification Sound
 	var notiSound = new Audio('sound/noti.ogg');
-
+	var notify = true;
 </script>

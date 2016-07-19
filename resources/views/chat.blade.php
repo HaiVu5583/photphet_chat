@@ -20,8 +20,12 @@
 		.collection .collection-item{
 			border: none;
 		}
+		#banner{
+			margin-bottom: 0;
+		}
 		#member{
 			min-height: 30px;
+			margin-bottom: 10px;
 		}
 		#chat-content{
 			border: 1px solid #e0e0e0;
@@ -46,6 +50,19 @@
 		.offline{
 			background-color: #e4e4e4;
 		}
+		.message-time{
+			color: rgba(0,0,0,0.3);
+			font-size: 11px;
+		}
+		.title{
+			font-weight: bold;
+		}
+		html{
+			font-size: 13px;
+		}
+		.collection .collection-item.avatar{
+			min-height: 0;
+		}
 	</style>
 </head>
 <body>
@@ -57,9 +74,26 @@
 		<ul>
 			<li><a class="btn-floating teal tooltipped" data-position="top" data-tooltip="Logout" id='logout'><i class="material-icons">input</i></a></li>
 			<li><a class="btn-floating teal tooltipped" data-position="top" data-tooltip="Profile" id='profile'><i class="material-icons">perm_identity</i></a></li>
+			<li><a class="btn-floating teal tooltipped" data-position="top" data-tooltip="Settings" id='setting'><i class="material-icons">settings</i></a></li>
+			
 			
 		</ul>
 	</div>
+	<div id="setting-modal" class="modal">
+		<div class="modal-content">
+			<h4>Settings</h4>
+			<hr/>
+			<p>
+				<input type="checkbox" class="filled-in" id="filled-in-box" checked="checked" onclick='changeNotificationSetting(this);'/>
+				<label for="filled-in-box">Sound & Notification</label>
+			</p>
+		</div>
+		<div class="modal-footer">
+			<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Close</a>
+		</div>
+	</div>
+
+
 	<div class='row'>
 		<div class="col s12 m8 offset-m2 main-container">
 			<div class="row" id="banner">
@@ -124,7 +158,7 @@
 					<textarea id="chatbox" class="materialize-textarea"></textarea>
 				</div>
 				<div class="input-filed col s2 valign" id="send-btn">
-					<a class="waves-effect waves-light btn">Send<i class="material-icons">send</i></a>
+					<a class="waves-effect waves-light btn">Send</a>
 				</div>
 			</div>
 		</div>
@@ -144,7 +178,8 @@
 		var roomUsersInfo = [];
 		var roomUsersInfoObject = {};
 		var roomUsersSessionObject = {};
-		
+		var startTime = new Date().getTime();
+
 		// Asysn get current user, can't use immidiate
 		//  Need review, all function need synchonize
 		firebase.auth().onAuthStateChanged(function(user) {
@@ -163,7 +198,6 @@
 		    		userStatus.addClass('online');
 		    	}
 		    	if (roomUsersInfoObject[changedStatusUser.uid] && roomUsersInfoObject[changedStatusUser.uid].displayName){
-		    		console.log('Need show online');
 		    		Materialize.toast(roomUsersInfoObject[changedStatusUser.uid].displayName + ' now Online', 3000, 'rounded');
 		    	}
 		    });
@@ -176,7 +210,6 @@
 		    		userStatus.addClass('offline');
 		    	}
 		    	if (roomUsersInfoObject[changedStatusUser.uid] && roomUsersInfoObject[changedStatusUser.uid].displayName){
-		    		console.log('Need show offline');
 		    		Materialize.toast(roomUsersInfoObject[changedStatusUser.uid].displayName + ' now Offline', 3000, 'rounded');
 		    	}
 		    });
@@ -222,8 +255,6 @@
 		    		}
 		    	});
 		    	loadUserInfo.then(function(value){
-		    		console.log('Room User Info: '+JSON.stringify(roomUsersInfo));
-		    		console.log('Room User Session: '+JSON.stringify(roomUsersSessionObject));
 		    		for (var i=0; i<roomUsersInfo.length;  i++){
 		    			var userInfo = roomUsersInfo[i];
 		    			roomUsersInfoObject[userInfo.uid] = userInfo;
@@ -257,9 +288,14 @@
 						 imgAvatar.setAttribute('src', roomUsersInfoObject[newMessage.authorID].photo);
 						 imgAvatar.className = "circle white";
 						 var titleUser = document.createElement('span');
-						 titleUser.setAttribute('src', 'title');
-						 titleUser.setAttribute('style', 'color: rgba(0,0,0,0.3);');
+						 titleUser.setAttribute('class', 'title');
 						 titleUser.textContent = roomUsersInfoObject[newMessage.authorID].displayName;
+						 
+						 var messageTime = document.createElement('span');
+						 messageTime.setAttribute('class', 'message-time');
+						 var messageDate = new Date(newMessage.timestamp);
+						 messageTime.textContent = ' ' +formatTime(messageDate);
+						 titleUser.appendChild(messageTime);
 
 						 var text = document.createElement('p');
 						 text.textContent = newMessage.message;
@@ -270,7 +306,8 @@
 						 chatcontent.scrollTop = chatcontent.scrollHeight;
 						 
 						 //Play sound and show notification
-						 if (currentUser.uid != newMessage.authorID){
+						 var loadTime = new Date().getTime();
+						 if (currentUser.uid != newMessage.authorID && loadTime-startTime > 10000 && notify){
 						 	notiSound.play();
 						 	iNotification.notify(roomUsersInfoObject[newMessage.authorID].displayName, newMessage.message);
 						 }
@@ -316,6 +353,11 @@
 			iAuth.logout();
 			// window.location.href = 'login';
 		});
+
+		// Setting button action
+		document.querySelector('#setting').addEventListener('click', function(){
+			$('#setting-modal').openModal();
+		});
 		
 		// Update UI when message
 		function sendMessageAndUpdateUI(userID, roomID){
@@ -327,6 +369,16 @@
 			}).catch(function(e) {
 			  console.log('Error: '+e); // "oh, no!"
 			})
+		}
+
+		//
+		function changeNotificationSetting(element){
+			notify = element.checked;
+		}
+
+		function formatTime(date){
+			var result = date.getHours()+":"+date.getMinutes() + " "+date.getDate() +"/"+date.getMonth()+"/"+date.getFullYear();
+			return result;
 		}
 	</script>
 </body>
